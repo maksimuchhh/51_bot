@@ -47,26 +47,21 @@ const isPidorAvailable = (dbDate) => {
 };
 
 initDataBase();
+
 setInterval(() => {
   fetch("https://emapa.fra1.cdn.digitaloceanspaces.com/statuses.json")
     .then((res) => res.json())
     .then(async (data) => {
-      const previousStatus = await AirRaid.findOrCreate({
-        where: {},
-        defaults: { isAirRaidActive: data.states["м. Київ"].enabled },
-      });
-
-      if (
-        data.states["м. Київ"].enabled &&
-        !previousStatus[0].isAirRaidActive
-      ) {
+      const previousStatus = await AirRaid.findOne({ where: { id: 1 } });
+      console.log("previousStatus", previousStatus);
+      if (data.states["м. Київ"].enabled && !previousStatus.isAirRaidActive) {
         bot.sendPhoto(
           pidorChatId,
           "https://static.ukrinform.com/photos/2022_02/thumb_files/630_360_1645871571-868.jpg"
         );
       } else if (
         !data.states["м. Київ"].enabled &&
-        previousStatus[0].isAirRaidActive
+        previousStatus.isAirRaidActive
       ) {
         bot.sendPhoto(
           pidorChatId,
@@ -74,7 +69,8 @@ setInterval(() => {
         );
       }
 
-      previousStatus[0].isAirRaidActive = data.states["м. Київ"].enabled;
+      previousStatus.isAirRaidActive = data.states["м. Київ"].enabled;
+      await previousStatus.save();
     });
 }, 30000);
 
