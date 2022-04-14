@@ -73,6 +73,8 @@ setInterval(() => {
           "https://static.novosti-n.org/upload/news/691244.jpg"
         );
       }
+
+      previousStatus[0].isAirRaidActive = data.states["м. Київ"].enabled;
     });
 }, 30000);
 
