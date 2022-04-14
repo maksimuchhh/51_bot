@@ -41,7 +41,7 @@ const getRandomInt = (max) => {
 const isPidorAvailable = (dbDate) => {
   const date1 = new Date();
   const date2 = new Date(dbDate);
-  if (date1 - date2 > 0.25 * 60 * 1000) {
+  if (date1 - date2 > 24 * 60 * 60 * 1000) {
     return true;
   }
 };
@@ -99,11 +99,13 @@ bot.on("message", async (msg) => {
 
   try {
     if (!text) return;
+
     if (text.includes("/start")) {
       await UserModel.findOrCreate({
         where: { username },
         defaults: { id, chatId, username },
       });
+
       onStart(chatId, username);
     }
 
@@ -111,6 +113,7 @@ bot.on("message", async (msg) => {
       if (!(await checkUser(chatId, username))) return;
 
       const user = await UserModel.findOne({ where: { username } });
+
       await bot.sendMessage(
         chatId,
         `
@@ -130,24 +133,30 @@ bot.on("message", async (msg) => {
 
     if (text.includes("/pidor")) {
       if (!(await checkUser(chatId, username))) return;
-      if (
-        !(await UserModel.findAll({ chatId })).every((el) =>
-          isPidorAvailable(el.updatedAt)
-        )
-      )
+
+      const users = await UserModel.findAll({ chatId });
+
+      if (!users.every((el) => isPidorAvailable(el.updatedAt)))
         return bot.sendMessage(
           chatId,
-          "Не так быстро голубки, нужно подождать"
+          `Пидор дня: @${
+            users.sort(function (a, b) {
+              return a.updatedAt - b.updatedAt;
+            })[users.length - 1].username
+          }\nНе так быстро голубки, нужно подождать`
         );
-      const users = await UserModel.findAll({ chatId });
+
       const pidorUsername = users[getRandomInt(users.length)].username;
+
       users[getRandomInt(users.length)].pidorCount += 1;
+
       await bot.setChatDescription(chatId, `Пидор: @${pidorUsername}`);
       await bot.sendPhoto(
         chatId,
         "https://lastfm.freetls.fastly.net/i/u/300x300/f939d9be5da0095a78bfb5cf45aecf39"
       );
       await bot.sendMessage(chatId, `@${pidorUsername} пидор!`);
+
       UserModel.increment("pidorCount", { where: { username: pidorUsername } });
       return;
     }
@@ -156,6 +165,7 @@ bot.on("message", async (msg) => {
       if (!(await checkUser(chatId, username))) return;
 
       const users = await UserModel.findAll({ chatId });
+
       await bot.sendMessage(
         chatId,
         `Главный пидор группы: @${
