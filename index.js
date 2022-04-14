@@ -53,7 +53,6 @@ setInterval(() => {
     .then((res) => res.json())
     .then(async (data) => {
       const previousStatus = await AirRaid.findOne({ where: { id: 1 } });
-      console.log("previousStatus", previousStatus);
       if (data.states["м. Київ"].enabled && !previousStatus.isAirRaidActive) {
         bot.sendPhoto(
           pidorChatId,
@@ -71,7 +70,8 @@ setInterval(() => {
 
       previousStatus.isAirRaidActive = data.states["м. Київ"].enabled;
       await previousStatus.save();
-    });
+    })
+    .catch((err) => console.error("AirRaid ERROR: ", err));
 }, 30000);
 
 bot.setMyCommands([
