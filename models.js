@@ -5,6 +5,8 @@ const User = sequelize.define("user", {
   id: {
     type: DataTypes.BIGINT,
     primaryKey: true,
+    autoIncrement: true,
+    unique: true,
   },
   username: { type: DataTypes.STRING },
   chatId: { type: DataTypes.BIGINT },

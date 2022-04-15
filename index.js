@@ -97,7 +97,6 @@ bot.on("message", async (msg) => {
   const text = msg.text;
   const chatId = msg.chat.id;
   const username = msg.from.username;
-  const id = msg.from.id;
 
   try {
     if (!text) return;
@@ -105,7 +104,7 @@ bot.on("message", async (msg) => {
     if (text.includes("/start")) {
       await UserModel.findOrCreate({
         where: { chatId, username },
-        defaults: { id, chatId, username },
+        defaults: { chatId, username },
       }).catch((err) => console.error("/start ERROR: ", err));
 
       onStart(chatId, username);
