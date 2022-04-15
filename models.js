@@ -7,8 +7,8 @@ const User = sequelize.define("user", {
     primaryKey: true,
     unique: true,
   },
-  username: { type: DataTypes.STRING, unique: true },
-  chatId: { type: DataTypes.STRING },
+  username: { type: DataTypes.STRING },
+  chatId: { type: DataTypes.INTEGER },
   pidorCount: { type: DataTypes.INTEGER, defaultValue: 0 },
 });
 

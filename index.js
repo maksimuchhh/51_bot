@@ -10,13 +10,13 @@ const pidorChatId = "-1001248737197";
 const bot = new TelegramApi(token, { polling: true });
 
 const initDataBase = async () => {
-  sequelize.authenticate();
-  sequelize.sync();
+  await sequelize.authenticate();
+  await sequelize.sync();
 };
 
 const checkUser = async (chatId, username) => {
   try {
-    const user = await UserModel.findOne({ where: { username } });
+    const user = await UserModel.findOne({ where: { chatId, username } });
 
     if (!user) {
       await bot.sendMessage(chatId, "Напиши /start что бы вступить в клуб");
@@ -52,7 +52,11 @@ setInterval(() => {
   fetch("https://emapa.fra1.cdn.digitaloceanspaces.com/statuses.json")
     .then((res) => res.json())
     .then(async (data) => {
-      const previousStatus = await AirRaid.findOne({ where: { id: 1 } });
+      const [previousStatus] = await AirRaid.findOrCreate({
+        where: { id: 1 },
+        defaults: { id: 1, isAirRaidActive: data.states["м. Київ"].enabled },
+      });
+
       if (data.states["м. Київ"].enabled && !previousStatus.isAirRaidActive) {
         bot.sendPhoto(
           pidorChatId,
@@ -102,7 +106,7 @@ bot.on("message", async (msg) => {
       await UserModel.findOrCreate({
         where: { username },
         defaults: { id, chatId, username },
-      });
+      }).catch((err) => console.error("/start ERROR: ", err));
 
       onStart(chatId, username);
     }
@@ -110,7 +114,7 @@ bot.on("message", async (msg) => {
     if (text.includes("/me")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const user = await UserModel.findOne({ where: { username } });
+      const user = await UserModel.findOne({ where: { chatId, username } });
 
       await bot.sendMessage(
         chatId,
@@ -132,7 +136,7 @@ bot.on("message", async (msg) => {
     if (text.includes("/pidor")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const users = await UserModel.findAll({ chatId });
+      const users = await UserModel.findAll({ where: { chatId } });
 
       if (!users.every((el) => isPidorAvailable(el.updatedAt)))
         return bot.sendMessage(
@@ -162,7 +166,7 @@ bot.on("message", async (msg) => {
     if (text.includes("/info")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const users = await UserModel.findAll({ chatId });
+      const users = await UserModel.findAll({ where: { chatId } });
 
       await bot.sendMessage(
         chatId,
