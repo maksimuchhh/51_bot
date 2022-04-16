@@ -40,17 +40,15 @@ const onStart = async (chatId, username) => {
   await bot.sendMessage(chatId, `@${username}, начнём игру?`);
 };
 
-const onMe = async (chatId, username) => {
+const onMe = async (first_name, last_name, chatId, username) => {
   const user = await UserModel.findOne({ where: { chatId, username } });
 
   await bot.sendMessage(
     chatId,
     `
-    Тебя зовут: ${msg.from.first_name} ${
-      msg.from.last_name || ""
-    }\nТвой никнейм: ${msg.from.username}\nТы был пидором: ${
-      user.pidorCount
-    } раз
+    Тебя зовут: ${first_name} ${
+      last_name || ""
+    }\nТвой никнейм: ${username}\nТы был пидором: ${user.pidorCount} раз
   `
   );
 };
@@ -159,7 +157,7 @@ bot.on("message", async (msg) => {
     if (text.includes("/me")) {
       if (!(await checkUser(chatId, username))) return;
 
-      await onMe(chatId, username);
+      await onMe(msg.from.first_name, msg.from.last_name, chatId, username);
       return;
     }
 
