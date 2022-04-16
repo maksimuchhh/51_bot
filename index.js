@@ -34,7 +34,7 @@ const checkUser = async (chatId, username) => {
 const onStart = async (chatId, username) => {
   await UserModel.findOrCreate({
     where: { chatId, username },
-    defaults: { chatId, username },
+    defaults: { chatId, username, isPidor: false },
   }).catch((err) => console.error("/start ERROR: ", err));
 
   await bot.sendMessage(chatId, `@${username}, начнём игру?`);
