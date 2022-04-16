@@ -75,7 +75,9 @@ const onPidor = async (chatId) => {
   if (!users.every((el) => isPidorAvailable(el.updatedAt)))
     return bot.sendMessage(
       chatId,
-      `Пидор дня: @${pidorUser.username}\nНе так быстро голубки, нужно подождать`
+      pidorUser
+        ? `Пидор дня: @${pidorUser.username}\nНе так быстро голубки, нужно подождать`
+        : "Пидор дня ещё не определён\nНо тут какая то хуйня происходит, подождите"
     );
   pidorUser.isPidor = false;
   await pidorUser.save();
