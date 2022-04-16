@@ -145,24 +145,6 @@ bot.on("voice", async (msg) => {
   bot.sendMessage(chatId, `@${username} заебал со своими голосовыми`);
 });
 
-bot.onText(/getLocation/, (msg) => {
-  const opts = {
-    reply_markup: JSON.stringify({
-      keyboard: [[{ text: "Дай знать где ты, дон?", request_location: true }]],
-      resize_keyboard: true,
-      one_time_keyboard: true,
-    }),
-  };
-  bot.sendMessage(msg.chat.id, "Contact and Location request", opts);
-});
-
-bot.on("location", (msg) => {
-  bot.sendMessage(
-    msg.chat.id,
-    `Latitude:${msg.location.latitude}\nLongitude:${msg.location.longitude}`
-  );
-});
-
 bot.on("message", async (msg) => {
   const text = msg.text;
   const chatId = msg.chat.id;
