@@ -79,8 +79,10 @@ const onPidor = async (chatId) => {
         ? `Пидор дня: @${pidorUser.username}\nНе так быстро голубки, нужно подождать`
         : "Пидор дня ещё не определён\nНо тут какая то хуйня происходит, подождите"
     );
-  pidorUser.isPidor = false;
-  await pidorUser.save();
+  if (pidorUser) {
+    pidorUser.isPidor = false;
+    await pidorUser.save();
+  }
 
   const newPidor = users[getRandomInt(users.length)];
 
