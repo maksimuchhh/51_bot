@@ -91,7 +91,6 @@ const onPidor = async (chatId) => {
   newPidor.isPidor = true;
   await newPidor.save();
 
-  // await bot.setChatDescription(chatId, `Пидор: @${newPidorUsername}`);
   await bot.sendPhoto(
     chatId,
     "https://lastfm.freetls.fastly.net/i/u/300x300/f939d9be5da0095a78bfb5cf45aecf39"
@@ -144,6 +143,24 @@ bot.on("voice", async (msg) => {
   const username = msg.from.username;
 
   bot.sendMessage(chatId, `@${username} заебал со своими голосовыми`);
+});
+
+bot.onText(/getLocation/, (msg) => {
+  const opts = {
+    reply_markup: JSON.stringify({
+      keyboard: [[{ text: "Дай знать где ты, дон?", request_location: true }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    }),
+  };
+  bot.sendMessage(msg.chat.id, "Contact and Location request", opts);
+});
+
+bot.on("location", (msg) => {
+  bot.sendMessage(
+    msg.chat.id,
+    `Latitude:${msg.location.latitude}\nLongitude:${msg.location.longitude}`
+  );
 });
 
 bot.on("message", async (msg) => {
