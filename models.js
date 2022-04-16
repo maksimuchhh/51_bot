@@ -11,6 +11,7 @@ const User = sequelize.define("user", {
   username: { type: DataTypes.STRING },
   chatId: { type: DataTypes.BIGINT },
   pidorCount: { type: DataTypes.INTEGER, defaultValue: 0 },
+  isPidor: { type: DataTypes.BOOLEAN, defaultValue: false },
 });
 
 module.exports = User;

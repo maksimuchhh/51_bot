@@ -3,6 +3,7 @@ const fetch = require("node-fetch");
 const sequelize = require("./db");
 const UserModel = require("./models");
 const AirRaid = require("./airRaid");
+const { isPidorAvailable, getRandomInt } = require("./helpers");
 
 const token = "5353416260:AAEoFw5MbXUB8XnFzLioHzfaWiJazIj3kHI";
 const pidorChatId = "-1001248737197";
@@ -31,19 +32,69 @@ const checkUser = async (chatId, username) => {
 };
 
 const onStart = async (chatId, username) => {
+  await UserModel.findOrCreate({
+    where: { chatId, username },
+    defaults: { chatId, username },
+  }).catch((err) => console.error("/start ERROR: ", err));
+
   await bot.sendMessage(chatId, `@${username}, начнём игру?`);
 };
 
-const getRandomInt = (max) => {
-  return Math.floor(Math.random() * max);
+const onMe = async (chatId, username) => {
+  const user = await UserModel.findOne({ where: { chatId, username } });
+
+  await bot.sendMessage(
+    chatId,
+    `
+    Тебя зовут: ${msg.from.first_name} ${
+      msg.from.last_name || ""
+    }\nТвой никнейм: ${msg.from.username}\nТы был пидором: ${
+      user.pidorCount
+    } раз
+  `
+  );
 };
 
-const isPidorAvailable = (dbDate) => {
-  const date1 = new Date();
-  const date2 = new Date(dbDate);
-  if (date1 - date2 > 24 * 60 * 60 * 1000) {
-    return true;
-  }
+const onInfo = async (chatId) => {
+  const users = await UserModel.findAll({ where: { chatId } });
+
+  await bot.sendMessage(
+    chatId,
+    `Главный пидор группы: @${
+      users.reduce(function (prev, current) {
+        return prev.pidorCount > current.pidorCount ? prev : current;
+      }).username
+    }\n\n${users
+      .map((el) => `@${el.username} был пидором ${el.pidorCount || 0} раз`)
+      .join("\n")}`
+  );
+};
+
+const onPidor = async (chatId) => {
+  const users = await UserModel.findAll({ where: { chatId } });
+  const pidorUser = await UserModel.findOne({ where: { isPidor: true } });
+
+  if (!users.every((el) => isPidorAvailable(el.updatedAt)))
+    return bot.sendMessage(
+      chatId,
+      `Пидор дня: @${pidorUser.username}\nНе так быстро голубки, нужно подождать`
+    );
+  pidorUser.isPidor = false;
+  await pidorUser.save();
+
+  const newPidor = users[getRandomInt(users.length)];
+
+  const newPidorUsername = newPidor.username;
+  newPidor.pidorCount += 1;
+  newPidor.isPidor = true;
+  await newPidor.save();
+
+  await bot.setChatDescription(chatId, `Пидор: @${newPidorUsername}`);
+  await bot.sendPhoto(
+    chatId,
+    "https://lastfm.freetls.fastly.net/i/u/300x300/f939d9be5da0095a78bfb5cf45aecf39"
+  );
+  await bot.sendMessage(chatId, `@${newPidorUsername} пидор!`);
 };
 
 initDataBase();
@@ -102,29 +153,13 @@ bot.on("message", async (msg) => {
     if (!text) return;
 
     if (text.includes("/start")) {
-      await UserModel.findOrCreate({
-        where: { chatId, username },
-        defaults: { chatId, username },
-      }).catch((err) => console.error("/start ERROR: ", err));
-
       onStart(chatId, username);
     }
 
     if (text.includes("/me")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const user = await UserModel.findOne({ where: { chatId, username } });
-
-      await bot.sendMessage(
-        chatId,
-        `
-    Тебя зовут: ${msg.from.first_name} ${
-          msg.from.last_name || ""
-        }\nТвой никнейм: ${msg.from.username}\nТы был пидором: ${
-          user.pidorCount
-        } раз
-  `
-      );
+      await onMe(chatId, username);
       return;
     }
 
@@ -135,49 +170,14 @@ bot.on("message", async (msg) => {
     if (text.includes("/pidor")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const users = await UserModel.findAll({ where: { chatId } });
-
-      if (!users.every((el) => isPidorAvailable(el.updatedAt)))
-        return bot.sendMessage(
-          chatId,
-          `Пидор дня: @${
-            users.sort(function (a, b) {
-              return a.updatedAt - b.updatedAt;
-            })[users.length - 1].username
-          }\nНе так быстро голубки, нужно подождать`
-        );
-
-      const pidorUsername = users[getRandomInt(users.length)].username;
-
-      users[getRandomInt(users.length)].pidorCount += 1;
-
-      await bot.setChatDescription(chatId, `Пидор: @${pidorUsername}`);
-      await bot.sendPhoto(
-        chatId,
-        "https://lastfm.freetls.fastly.net/i/u/300x300/f939d9be5da0095a78bfb5cf45aecf39"
-      );
-      await bot.sendMessage(chatId, `@${pidorUsername} пидор!`);
-
-      UserModel.increment("pidorCount", { where: { username: pidorUsername } });
+      await onPidor(chatId);
       return;
     }
 
     if (text.includes("/info")) {
       if (!(await checkUser(chatId, username))) return;
 
-      const users = await UserModel.findAll({ where: { chatId } });
-
-      await bot.sendMessage(
-        chatId,
-        `Главный пидор группы: @${
-          users.reduce(function (prev, current) {
-            return prev.pidorCount > current.pidorCount ? prev : current;
-          }).username
-        }\n\n${users
-          .map((el) => `@${el.username} был пидором ${el.pidorCount || 0} раз`)
-          .join("\n")}`
-      );
-
+      await onInfo(chatId);
       return;
     }
   } catch (err) {
